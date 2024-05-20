@@ -2,13 +2,25 @@ import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import OrderAPI from "../api/OrderApi";
 import { UserContext } from "../App";
+import { Box, Button, Stack, TextField } from "@mui/material";
+import { Add, Delete, Edit, Paid, Save } from "@mui/icons-material";
+import {
+  GridRowModes,
+  DataGrid,
+  GridToolbarContainer,
+  GridActionsCellItem,
+  GridRowEditStopReasons,
+  renderEditInputCell,
+  GridEditInputCell,
+} from '@mui/x-data-grid';
 
 function Order() {
   const params = useParams();
   const navigate = useNavigate();
   const isNewOrder = params.id === undefined;
   const { user, setUser } = useContext(UserContext);
-
+  const [rowModesModel, setRowModesModel] = useState({});
+  
   const [currentOrder, setCurrentOrder] = useState({
     id: null,
     creator: {id: "", name: ""},
@@ -18,7 +30,106 @@ function Order() {
     orderItems: []
   });
 
+  const handleEditClick = (id) => () => {
+    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
+  };
+
+  const handleSaveClick = (id) => () => {
+    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+  };
+  
+  const handleDeleteClick = (id) => () => {
+    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+    let i = currentOrder.orderItems.findIndex(x => x.id === id);
+    let updatedOrder = {...currentOrder};
+    let updateOrderItems = [...updatedOrder.orderItems];
+    updateOrderItems.splice(i, 1);
+    updatedOrder.orderItems = updateOrderItems;
+    OrderAPI.deleteOrderItem(id);
+    setCurrentOrder(updatedOrder);
+  };
+
+  const handleRowModesModelChange = (newRowModesModel) => {
+    setRowModesModel(newRowModesModel);
+  };
+
+  const handleRowEditStop = (params, event) => {
+    if (params.reason === GridRowEditStopReasons.rowFocusOut) {
+      event.defaultMuiPrevented = true;
+    }
+  };
+
+  const processRowUpdate = (newRow) => {
+    OrderAPI.updateOrderItem(newRow);
+    setOrderItem(newRow);
+    return newRow;
+  };
+
+  const columns = [
+    { field: 'orderer', headerClassName: 'grid-header', headerName: 'Besteller', valueGetter: (orderer) => orderer?.name },
+    { field: 'description', headerClassName: 'grid-header', headerName: 'Beschreibung' },
+    { 
+      field: 'price',
+      headerClassName: 'grid-header',
+      headerName: 'Preis',
+      type: 'number',
+      editable: true,
+      valueFormatter: (value) => {
+        if (value === null) return '';
+        return value?.toFixed(2) + " €";
+      },
+      preProcessEditCellProps: (props) => {
+        console.log(props)
+      },
+      // renderEditCell: (params) => {
+      //   <GridEditInputCell
+      //     {...params}
+      //     inputProps={{
+      //       min: 0
+      //     }}
+      //   />
+      // }
+    },
+    { field: 'paid', headerClassName: 'grid-header', headerName: 'Bezahlt?', type: 'boolean', editable: true },
+    { field: 'accompany', headerClassName: 'grid-header', headerName: 'Begleitung', type: 'boolean', editable: true },
+    { field: 'actions', headerClassName: 'grid-header', headerName: '', type:'actions', getActions:({id, row}) => {
+      const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
+      const isMyOrderItem = row.orderer.id === user.id;
+      let actionItems = [];
+
+      if ((isMyOrder() || isMyOrderItem) && !isInEditMode) {
+        actionItems.push(
+          <GridActionsCellItem 
+            icon={<Edit />}
+            label="Bearbeiten"
+            onClick={handleEditClick(id)}
+          />
+        );
+      }
+      if (isInEditMode) {
+        actionItems.push(
+          <GridActionsCellItem 
+            icon={<Save />}
+            label="Speichern"
+            onClick={handleSaveClick(id)}
+          />
+        );
+      }
+      if (isMyOrderItem) {
+        actionItems.push(
+          <GridActionsCellItem 
+            icon={<Delete />}
+            label="Löschen"
+            onClick={handleDeleteClick(id)}
+          />
+        );
+      }
+      return actionItems;
+    } }
+  ]
+
   useEffect(() => {
+
       if (params.id != null) {
         let order = OrderAPI.getOrder(params.id);
         setCurrentOrder(order);
@@ -40,115 +151,79 @@ function Order() {
   }
 
   return (
-    <div>
+    <Stack container spacing={2}>
       <h2>{isNewOrder ? "Neue Bestellung" : "Bestellung bei: " + currentOrder.restaurant}</h2>
       {isNewOrder &&
-      <div>
-        <label>Restaurant</label>
-        <input type="text" disabled={!isNewOrder} value={currentOrder.restaurant} onChange={e => onOrderChange(e.target.value, "restaurant")}></input>
-      </div>
+        <TextField 
+          label="Restaurant"
+          required
+          value={currentOrder.restaurant}
+          onChange={e => onOrderChange(e.target.value, "restaurant")}
+        />
       }
-      <div>
-        <label>Einkäufer</label>
-        <input type="text" disabled={!isNewOrder} value={currentOrder.creator.name} onChange={e => onOrderChange(e.target.value, "creator.name")}></input>
-      </div>
-      {isNewOrder ?
-        <div>
-            <label>Paypal Link </label>
-              <input type="text" value={currentOrder.paypal} onChange={e => onOrderChange(e.target.value, "paypal")}></input>
-        </div> :
-        (<div>
-          <a href={ currentOrder.paypal } target="_blank" rel="noreferrer">Bezahlen</a>
-        </div>)
+        <TextField 
+          label="Einkäufer"
+          required
+          disabled={!isNewOrder}
+          variant={isNewOrder ? "outlined" : "filled"}
+          value={currentOrder.creator.name}
+          onChange={e => onOrderChange(e.target.value, "creator.name")}
+        />
+      {isNewOrder &&
+          <TextField 
+            label="Paypal Link"
+            value={currentOrder.paypal}
+            onChange={e => onOrderChange(e.target.value, "paypal")}
+          />
       }
       {isNewOrder &&
-        <button 
+        <Button 
+          variant="contained"
           onClick={() => onCreateOrderClicked()}
           disabled={checkButtonDisabled()}
         >
           Erstellen
-        </button>
+        </Button>
       }
-      {!isNewOrder &&
-        <button 
-        onClick={() => onCreateOrderItemClicked()}
+      <Box
+        sx={{
+          width: '100%'
+        }}
       >
-        Bestellung aufgeben
-      </button>
-      }
-      {!isNewOrder && isMyOrder() &&
-        <button 
-        onClick={() => onDeleteOrderClicked()}
-      >
-        Bestellung löschen
-      </button>
-      }
-      {!isNewOrder &&
-        <table>
-          <thead>
-            <tr>
-              <th>Besteller</th>
-              <th>Beschreibung</th>
-              <th>Preis</th>
-              <th>Bezahlt?</th>
-              <th>Begleitung?</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentOrder.orderItems.map(orderitem => { return (
-            <tr key={orderitem.id}>
-              <td>{orderitem.orderer.name}</td>
-              <td>{orderitem.description}</td>
-              <td>{(!isMyOrder() && !isMyOrderItem(orderitem)) ?
-                orderitem.price :
-                <input 
-                  type="number"
-                  value={orderitem.price}
-                  onChange={e => onOrderItemChange(orderitem, e.target.value, "price")}
-                />
-              }</td>
-              <td>
-                <input 
-                  type="checkbox"
-                  checked={orderitem.paid} 
-                  disabled={!(isMyOrder()) && !(isMyOrderItem(orderitem))}
-                  onChange={e => onOrderItemChange(orderitem, e.target.checked, "paid")}
-                />
-              </td>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={orderitem.accompany}
-                  disabled={!(isMyOrderItem(orderitem))}
-                  onChange={e => onOrderItemChange(orderitem, e.target.checked, "accompany")}
-                />
-              </td>
-              <td>
-                {(isMyOrder() || isMyOrderItem(orderitem)) &&
-                  <button disabled={!orderitem.hasChanges} onClick={() => onSaveOrderItemClicked(orderitem)}>
-                    Speichern
-                  </button>}
-                {(orderitem.orderer.id === user.id) &&
-                  <button onClick={() => onDeleteOrderItemClicekd(orderitem.id)}>
-                    Löschen
-                  </button>}
-              </td>
-            </tr>
-            )}
-            )}
-          </tbody>
-        </table>
-      }
-    </div>
+        {!isNewOrder &&
+        <DataGrid
+          rows={currentOrder.orderItems}
+          columns={columns}
+          editMode="row"
+          rowModesModel={rowModesModel}
+          onRowModesModelChange={handleRowModesModelChange}
+          onRowEditStop={handleRowEditStop}
+          processRowUpdate={processRowUpdate}
+          getRowHeight={() => 'auto'}
+          autoHeight={true}
+          slots={{
+            toolbar: () => { return(
+              <GridToolbarContainer>
+                <Button startIcon={<Add/>} onClick={onCreateOrderItemClicked}>
+                  Bestellung aufgeben
+                </Button>
+                <Button startIcon={<Paid/>} href={ currentOrder.paypal } target="_blank" rel="noreferrer">
+                  Bezahlen
+                </Button>
+              </GridToolbarContainer>)
+            } 
+          }}
+          getCellClassName={(props) => {
+            return "datagrid-cell"
+          }}
+        />
+        }
+      </Box>
+    </Stack>
   );
 
   function isMyOrder() {
     return currentOrder.creator.id === user.id;
-  }
-
-  function isMyOrderItem (orderitem) {
-    return orderitem.orderer.id === user.id;
   }
 
   function onOrderChange(value, key) {
@@ -188,38 +263,12 @@ function Order() {
     navigate("/addorder/" + params.id);
   }
 
-  function onDeleteOrderClicked() {
-    OrderAPI.deleteOrder(currentOrder.id);
-    navigate("/");
-  }
-
-  function onDeleteOrderItemClicekd(orderItemId) {
-    let i = currentOrder.orderItems.findIndex(x => x.id === orderItemId);
-    const updatedOrder = {...currentOrder};
-    updatedOrder.orderItems.splice(i, 1);
-    OrderAPI.deleteOrderItem(orderItemId);
-    setCurrentOrder(updatedOrder);
-  }
-
-  function onSaveOrderItemClicked(orderitem) {
-    delete orderitem.hasChanges;
-    OrderAPI.updateOrderItem(orderitem);
-    setOrderItem(orderitem);
-  }
-
-  function onOrderItemChange(orderitem, value, key) {
-    orderitem[key] = value;
-    orderitem.hasChanges = true;
-    setOrderItem(orderitem);
-  }
-
   function setOrderItem(orderitem) {
     setCurrentOrder(previous => {
       let update = {
         ...previous
       }
-      let i = update.orderItems.findIndex(x =>  x.id === orderitem.id);
-      update.orderItems[i] = orderitem;
+      update.orderItems = update.orderItems.map(x => x.id === orderitem.id ? orderitem : x);
       return update;
     })
   }

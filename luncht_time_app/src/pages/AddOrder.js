@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import OrderAPI from "../api/OrderApi";
 import { UserContext } from "../App";
+import { Button, Checkbox, FormControlLabel, Stack, TextField } from "@mui/material";
 
 function AddOrder() {
   const params = useParams();
@@ -18,55 +19,46 @@ function AddOrder() {
   }); 
 
   return (
-    <div>
+    <Stack spacing={2}>
       <h2>Bestellung aufgeben</h2>
-      <div>
-        <label>Beschreibung</label><br/>
-        <textarea 
+        <TextField
+          label="Beschreibung" 
           value={orderItem.description}
+          required
+          multiline
           onChange={e => onOrderChange(e.target.value, "description")}
-        ></textarea>
-      </div>
-      <div>
-        <label>Namen</label>
-        <input 
-          type="text" 
-          required={true}
+        />
+        <TextField 
+          label="Namen"
+          required
           value={orderItem.orderer.name}
           onChange={e => onOrderChange(e.target.value, "orderer.name")}
-        ></input>
-      </div>
-      <div>
-        <label>Preis</label>
-        <input
+        />
+        <TextField
+          label="Preis"
           type="number"
           value={orderItem.price}
           onChange={e => onOrderChange(e.target.value, "price")}
-        ></input>
-      </div>
-      <div>
-        <label>Bezahlt?</label>
-        <input 
-          type="checkbox"
-          checked={orderItem.paid}
-          onChange={e => onOrderChange(e.target.checked, "paid")}
-        ></input>
-      </div>
-      <div>
-        <label>Begleitung?</label>
-        <input 
-          type="checkbox"
-          checked={orderItem.accompany}
-          onChange={e => onOrderChange(e.target.checked, "accompany")}
-        ></input>
-      </div>
-      <button 
+        />
+        <FormControlLabel label="Bezahlt" control={
+          <Checkbox
+            checked={orderItem.paid}
+            onChange={e => onOrderChange(e.target.checked, "paid")}
+          />
+        } />
+        <FormControlLabel label="Begleitung" control={
+          <Checkbox
+            checked={orderItem.accompany}
+            onChange={e => onOrderChange(e.target.checked, "accompany")}
+          />
+        } />
+      <Button
         onClick={() => onConfirmClicked()}
         disabled={checkButtonDisabled()}
       >
-      Bestellung aufgeben
-    </button>
-    </div>
+        Bestellung aufgeben
+      </Button>
+    </Stack>
   );
 
   function checkButtonDisabled() {
