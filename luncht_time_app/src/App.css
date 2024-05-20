@@ -1,37 +1,48 @@
+html, body {
+  height: 100vh;
+  font-family: "Roboto","Helvetica","Arial",sans-serif;
+}
+
 .App {
   text-align: center;
-  background-color: #282c34;
+  background-color: #f0f0f0;
+  min-height: 100vh;
+  color: #606060;
 }
 
-.App-header {
-  min-height: 10vh;
-  background-color: #b81f40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
+.App-header a {
   color: white;
-}
-
-.App-header li {
-  display: inline;
-  padding: 0 5px;
-}
-
-.App a {
-  color: white;
-  text-decoration: none;
 }
 
 .App-content {
-  min-height: 90vh;
-  padding: 5px;
-  color: white;
+  margin-top: 5px;
+  color: #606060;
   justify-content: center;
   display: flex;
 }
 
-th, td {
+.MuiTableRow-root th {
+  color: white;
+}
+
+.MuiTableRow-root td:last-child {
+  text-align: center;
+}
+
+.MuiTableRow-root td a {
+  color: #000;
+}
+
+/* .MuiDataGrid-columnHeaders {
+  background-color: #B81F40;
+} */
+
+.App .datagrid-cell.MuiDataGrid-cell {
   padding: 5px;
+  align-content: center;
+} 
+
+.grid-header {
+  background-color: #B81F40;
+  color: white;
 }
