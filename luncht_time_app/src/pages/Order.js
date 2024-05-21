@@ -10,8 +10,6 @@ import {
   GridToolbarContainer,
   GridActionsCellItem,
   GridRowEditStopReasons,
-  renderEditInputCell,
-  GridEditInputCell,
 } from '@mui/x-data-grid';
 
 function Order() {
@@ -77,18 +75,7 @@ function Order() {
       valueFormatter: (value) => {
         if (value === null) return '';
         return value?.toFixed(2) + " €";
-      },
-      preProcessEditCellProps: (props) => {
-        console.log(props)
-      },
-      // renderEditCell: (params) => {
-      //   <GridEditInputCell
-      //     {...params}
-      //     inputProps={{
-      //       min: 0
-      //     }}
-      //   />
-      // }
+      }
     },
     { field: 'paid', headerClassName: 'grid-header', headerName: 'Bezahlt?', type: 'boolean', editable: true },
     { field: 'accompany', headerClassName: 'grid-header', headerName: 'Begleitung', type: 'boolean', editable: true },
@@ -131,8 +118,9 @@ function Order() {
   useEffect(() => {
 
       if (params.id != null) {
-        let order = OrderAPI.getOrder(params.id);
-        setCurrentOrder(order);
+        loadOrder(params.id)
+        // let order = OrderAPI.getOrder(params.id);
+        // setCurrentOrder(order);
       }
       else {
         setCurrentOrder({
@@ -252,8 +240,8 @@ function Order() {
     return false;
   }
 
-  function onCreateOrderClicked() {
-    OrderAPI.createNewOrder(currentOrder);
+  async function onCreateOrderClicked() {
+    await OrderAPI.createNewOrder(currentOrder);
     OrderAPI.updateUser(currentOrder.creator);
     setUser(currentOrder.creator);
     navigate("/")
@@ -271,6 +259,11 @@ function Order() {
       update.orderItems = update.orderItems.map(x => x.id === orderitem.id ? orderitem : x);
       return update;
     })
+  }
+
+  async function loadOrder(orderId) {
+    let order = await OrderAPI.getOrder(orderId);
+    setCurrentOrder(order);
   }
 }
 

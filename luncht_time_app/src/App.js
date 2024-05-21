@@ -24,7 +24,7 @@ function App() {
   
   OrderAPI.initDemoData();
   if (user === undefined) {
-    setUser(OrderAPI.getUser(localStorage.getItem("CurrentUserId")));
+    loadUser();
   }
 
   return (
@@ -54,6 +54,11 @@ function App() {
       </Box>
     </HashRouter>
   );
+
+  async function loadUser() {
+    const currentUser = await OrderAPI.getUser(localStorage.getItem("CurrentUserId"));
+    setUser(currentUser);
+  }
 }
 
 export default App;
