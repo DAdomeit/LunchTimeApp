@@ -8,9 +8,10 @@ import { ChevronRight } from "@mui/icons-material";
 function OrderList () {
   const [allOrders, setOrders] = useState([]);
   const theme = useTheme();
+  
 
   useEffect(() => {
-    setOrders(OrderAPI.getAllOrders());
+    loadOrders();
   }, [])
 
   return (
@@ -47,6 +48,12 @@ function OrderList () {
       </TableContainer>
     </div>
   );
+
+  async function loadOrders() {
+    const loadedOrders = await OrderAPI.getAllOrders();
+    setOrders(loadedOrders);
+
+  }
 }
 
 export default OrderList;

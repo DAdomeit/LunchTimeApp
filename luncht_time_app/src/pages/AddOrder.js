@@ -68,9 +68,9 @@ function AddOrder() {
     return false;
   }
 
-  function onConfirmClicked() {
+  async function onConfirmClicked() {
     user.name = orderItem.orderer.name;
-    OrderAPI.createNewOrderItem(orderItem);
+    await OrderAPI.createNewOrderItem(orderItem);
     OrderAPI.updateUser(user);
     navigate("/order/" + orderItem.orderid);
   }
